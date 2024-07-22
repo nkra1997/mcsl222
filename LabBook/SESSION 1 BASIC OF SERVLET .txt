@@ -1,0 +1,285 @@
+SESSION 1: BASIC OF SERVLET 
+1. Write a Servlet Programme to print the current date and time along with the 
+timestamp. 
+2. Create an HTML form with the input of student information using HTTP 
+Protocol and method, then display the input information using Servlet. 
+3. Write a servlet program to capture client IPs and display it. 
+4. Write a servlet program for session management using HTTP Session along 
+with tracking and also use a cookie for session tracking. 
+5. Write a CRUD (Create/Save, Read, Edit/Update, Delete) application using 
+servlet. Create a Database named IGNOU, create a table named Student 
+which must capture the student information (basics, contact, enrollment 
+details along with courses). Make necessary assumptions required. 
+**********************************************************************
+
+1. Servlet Program to Print the Current Date and Time with Timestamp
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.util.Date;
+
+public class CurrentDateTimeServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        Date date = new Date();
+        out.println("<html><body>");
+        out.println("<h1>Current Date and Time</h1>");
+        out.println("<p>Date and Time: " + date.toString() + "</p>");
+        out.println("<p>Timestamp: " + date.getTime() + "</p>");
+        out.println("</body></html>");
+    }
+}
+***************************************************************************************
+2. HTML Form and Servlet to Display Student Information
+HTML Form (student_form.html):
+
+html
+Copy code
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Information Form</title>
+</head>
+<body>
+    <h1>Student Information Form</h1>
+    <form action="DisplayStudentInfoServlet" method="post">
+        Name: <input type="text" name="name"><br>
+        Age: <input type="text" name="age"><br>
+        Gender: <input type="text" name="gender"><br>
+        Course: <input type="text" name="course"><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
+
+
+Servlet to Display Student Information:
+
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class DisplayStudentInfoServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String name = request.getParameter("name");
+        String age = request.getParameter("age");
+        String gender = request.getParameter("gender");
+        String course = request.getParameter("course");
+
+        out.println("<html><body>");
+        out.println("<h1>Student Information</h1>");
+        out.println("<p>Name: " + name + "</p>");
+        out.println("<p>Age: " + age + "</p>");
+        out.println("<p>Gender: " + gender + "</p>");
+        out.println("<p>Course: " + course + "</p>");
+        out.println("</body></html>");
+    }
+}
+*************************************************************************************
+3. Servlet Program to Capture Client IPs and Display It
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class ClientIPServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String clientIP = request.getRemoteAddr();
+
+        out.println("<html><body>");
+        out.println("<h1>Client IP Address</h1>");
+        out.println("<p>IP Address: " + clientIP + "</p>");
+        out.println("</body></html>");
+    }
+}
+*************************************************************************************
+4. Servlet Program for Session Management with HTTP Session and Cookie
+Servlet for Session Management:
+
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class SessionManagementServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        HttpSession session = request.getSession();
+        String sessionID = session.getId();
+        String message;
+
+        if (session.isNew()) {
+            message = "Welcome, new user!";
+        } else {
+            message = "Welcome back!";
+        }
+
+        Cookie sessionCookie = new Cookie("JSESSIONID", sessionID);
+        response.addCookie(sessionCookie);
+
+        out.println("<html><body>");
+        out.println("<h1>Session Management</h1>");
+        out.println("<p>Session ID: " + sessionID + "</p>");
+        out.println("<p>" + message + "</p>");
+        out.println("</body></html>");
+    }
+}
+*****************************************************************************************
+5. CRUD Application using Servlet and Database
+Database Setup:
+
+sql
+Copy code
+CREATE DATABASE IGNOU;
+
+USE IGNOU;
+
+CREATE TABLE Student (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    age INT,
+    gender VARCHAR(10),
+    course VARCHAR(100),
+    contact VARCHAR(100),
+    enrollment_number VARCHAR(100)
+);
+Servlets for CRUD Operations:
+
+1. Create (Insert) Operation:
+
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class AddStudentServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String name = request.getParameter("name");
+        String age = request.getParameter("age");
+        String gender = request.getParameter("gender");
+        String course = request.getParameter("course");
+        String contact = request.getParameter("contact");
+        String enrollmentNumber = request.getParameter("enrollmentNumber");
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/IGNOU", "root", "password");
+
+            PreparedStatement ps = con.prepareStatement("INSERT INTO Student(name, age, gender, course, contact, enrollment_number) VALUES (?, ?, ?, ?, ?, ?)");
+            ps.setString(1, name);
+            ps.setString(2, age);
+            ps.setString(3, gender);
+            ps.setString(4, course);
+            ps.setString(5, contact);
+            ps.setString(6, enrollmentNumber);
+
+            int i = ps.executeUpdate();
+            if (i > 0) {
+                out.println("<h1>Student Added Successfully</h1>");
+            }
+
+        } catch (Exception e) {
+            out.println("<h1>Error: " + e.getMessage() + "</h1>");
+        }
+    }
+}
+2. Read (Retrieve) Operation:
+
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class ViewStudentServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/IGNOU", "root", "password");
+
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Student");
+
+            out.println("<html><body>");
+            out.println("<h1>Student Details</h1>");
+            out.println("<table border='1'><tr><th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Course</th><th>Contact</th><th>Enrollment Number</th></tr>");
+            while (rs.next()) {
+                out.println("<tr><td>" + rs.getInt("id") + "</td><td>" + rs.getString("name") + "</td><td>" + rs.getInt("age") + "</td><td>" + rs.getString("gender") + "</td><td>" + rs.getString("course") + "</td><td>" + rs.getString("contact") + "</td><td>" + rs.getString("enrollment_number") + "</td></tr>");
+            }
+            out.println("</table>");
+            out.println("</body></html>");
+
+        } catch (Exception e) {
+            out.println("<h1>Error: " + e.getMessage() + "</h1>");
+        }
+    }
+}
+3. Update Operation:
+
+java
+Copy code
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class UpdateStudentServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String id = request.getParameter("id");
+        String name = request.getParameter("name");
+        String age = request.getParameter("age");
+        String gender = request.getParameter("gender");
+        String course = request.getParameter("course");
+        String contact = request.getParameter("contact");
+        String enrollmentNumber = request.getParameter("enrollmentNumber");
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/IGNOU", "root", "password");
+
+            PreparedStatement ps = con.prepareStatement("UPDATE Student SET name=?, age=?, gender=?, course=?, contact=?, enrollment_number=? WHERE id=?");
+            ps.setString(1, name);
+            ps.setString(2, age);
+            ps.setString(3, gender);
+            ps.setString(4, course);
+            ps.setString(5, contact);
+            ps.setString(6, enrollmentNumber);
+            ps.setString(7, id);
+
+            int i = ps.executeUpdate();
+            if (i > 0) {
+                out.println("<h1>Student Updated Successfully</h1>");
+            }
+
+        } catch (Exception e) {
+            out.println("<h1>Error: " + e.getMessage() + "</h1>");
+        }
+    }
+}

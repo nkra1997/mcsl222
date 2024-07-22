@@ -1,0 +1,244 @@
+SESSION 4: DEPENDENCY INJECTION, CONTROLLER 
+1. Write a class and implement it using dependency injection. 
+2. Write the service interface with the getRandom() method, define 3 courses 
+in an array, and inject using dependency injection into the teacher 
+Interface(exercise no 4 in session 3). Test the application and verify the 
+retrieving of random courses. 
+3. Write a programme using Spring Framework to create a controller and 
+display response in view using @GetMapping() annotation. 
+4. Create a Form to capture Student Admission information (make usual 
+assumptions about the attributes) using Spring Form tags (must use Text, 
+textarea, dropdown, date picker, true/false and checkbox) and write a 
+controller using @PostMapping() to display the form information.
+********************************************************************************************
+
+
+Part 1: Class and Dependency Injection
+First, we'll create a simple example of a service class and demonstrate dependency injection in Spring.
+
+Service Interface
+java file
+
+public interface CourseService {
+    String getRandomCourse();
+}
+
+Service Implementation
+java file
+
+import org.springframework.stereotype.Service;
+import java.util.Random;
+
+@Service
+public class CourseServiceImpl implements CourseService {
+
+    private static final String[] COURSES = {"Math", "Science", "History"};
+    private final Random random = new Random();
+
+    @Override
+    public String getRandomCourse() {
+        int index = random.nextInt(COURSES.length);
+        return COURSES[index];
+    }
+}
+
+
+Controller
+java file
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class CourseController {
+
+    private final CourseService courseService;
+
+    @Autowired
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
+
+    @GetMapping("/randomCourse")
+    public String getRandomCourse() {
+        return courseService.getRandomCourse();
+    }
+}
+
+*******************************************************************************************
+Part 2: Injecting Service into Teacher Interface and Testing
+Assuming you have a TeacherService interface and implementation similar to the CourseService.
+
+Teacher Interface
+java file
+
+public interface TeacherService {
+    String getCourseForToday();
+}
+
+Teacher Implementation
+java file
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class TeacherServiceImpl implements TeacherService {
+
+    private final CourseService courseService;
+
+    @Autowired
+    public TeacherServiceImpl(CourseService courseService) {
+        this.courseService = courseService;
+    }
+
+    @Override
+    public String getCourseForToday() {
+        return courseService.getRandomCourse();
+    }
+}
+
+Test Application
+java file
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TestApplication implements CommandLineRunner {
+
+    private final TeacherService teacherService;
+
+    @Autowired
+    public TestApplication(TeacherService teacherService) {
+        this.teacherService = teacherService;
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(TestApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        System.out.println("Random Course: " + teacherService.getCourseForToday());
+    }
+}
+*****************************************************************************************
+
+Part 3: Controller with @GetMapping
+Controller to Display Response
+java file
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class GreetingController {
+
+    @GetMapping("/greeting")
+    public String greeting() {
+        return "Hello, Welcome to Spring Framework!";
+    }
+}
+*******************************************************************************************
+
+Part 4: Student Admission Form
+Form HTML (Using Thymeleaf for Templating)
+html file
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Student Admission Form</title>
+</head>
+<body>
+    <form action="#" th:action="@{/submitForm}" th:object="${student}" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" th:field="*{name}" /><br>
+
+        <label for="address">Address:</label>
+        <textarea id="address" th:field="*{address}"></textarea><br>
+
+        <label for="gender">Gender:</label>
+        <select id="gender" th:field="*{gender}">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select><br>
+
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" th:field="*{dob}" /><br>
+
+        <label for="newsletter">Subscribe to Newsletter:</label>
+        <input type="checkbox" id="newsletter" th:field="*{newsletter}" /><br>
+
+        <input type="submit" value="Submit" />
+    </form>
+</body>
+</html>
+
+
+Student Model
+java file
+
+public class Student {
+
+    private String name;
+    private String address;
+    private String gender;
+    private LocalDate dob;
+    private boolean newsletter;
+
+    // Getters and Setters
+}
+
+
+Controller to Handle Form Submission
+java file
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+
+@Controller
+public class StudentController {
+
+    @GetMapping("/admissionForm")
+    public String showForm(Model model) {
+        model.addAttribute("student", new Student());
+        return "admissionForm";
+    }
+
+    @PostMapping("/submitForm")
+    public String submitForm(@ModelAttribute Student student, Model model) {
+        model.addAttribute("student", student);
+        return "formSuccess";
+    }
+}
+
+
+Success Page (formSuccess.html)
+html file
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Form Submission Success</title>
+</head>
+<body>
+    <h1>Form Submitted Successfully</h1>
+    <p th:text="'Name: ' + ${student.name}"></p>
+    <p th:text="'Address: ' + ${student.address}"></p>
+    <p th:text="'Gender: ' + ${student.gender}"></p>
+    <p th:text="'Date of Birth: ' + ${student.dob}"></p>
+    <p th:text="'Subscribe to Newsletter: ' + ${student.newsletter}"></p>
+</body>
+</html>
+
+
+
+
+
+

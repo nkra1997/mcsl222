@@ -1,0 +1,314 @@
+SESSION 6: HIBERNATE, JPA 
+1. Create a database for the student admission lifecycle and configure 
+Hibernate and JPA with the Spring MVC Project along with all table 
+entities. 
+2. Retrieve Student information using Hibernate and printing the value in the 
+console. 
+3. Create CRUD (Create/Save, Read/Fetch, Edit/Update, Delete) using Spring 
+MVC and Hibernation. 
+4. Apply batch update for student’s admission approval using Spring MVC 
+and Hibernate. 
+**************************************************************************
+Step 1: Create a Database and Configure Hibernate and JPA
+Database Setup
+Create the Database: Create a database named student_admission_db in your preferred database management system (e.g., MySQL).
+sql
+Copy code
+CREATE DATABASE student_admission_db;
+Create Tables: Define tables for the student admission lifecycle. For simplicity, we'll create a Student table.
+sql
+Copy code
+USE student_admission_db;
+
+CREATE TABLE Student (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    date_of_birth DATE,
+    admission_status VARCHAR(20)
+);
+Project Setup
+Add Dependencies: Update your pom.xml file with necessary dependencies for Spring, Hibernate, and JPA.
+xml
+Copy code
+<dependencies>
+    <!-- Spring and Spring MVC -->
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>5.3.15</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-webmvc</artifactId>
+        <version>5.3.15</version>
+    </dependency>
+    <!-- Hibernate and JPA -->
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-orm</artifactId>
+        <version>5.3.15</version>
+    </dependency>
+    <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-core</artifactId>
+        <version>5.6.9.Final</version>
+    </dependency>
+    <dependency>
+        <groupId>javax.persistence</groupId>
+        <artifactId>javax.persistence-api</artifactId>
+        <version>2.2</version>
+    </dependency>
+    <!-- MySQL Connector -->
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>8.0.26</version>
+    </dependency>
+    <!-- Other necessary dependencies -->
+</dependencies>
+
+Configure Hibernate and JPA:
+Create a hibernate.cfg.xml file in src/main/resources to configure Hibernate.
+
+xml
+Copy code
+<!DOCTYPE hibernate-configuration PUBLIC "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/student_admission_db</property>
+        <property name="hibernate.connection.username">your_username</property>
+        <property name="hibernate.connection.password">your_password</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
+        <property name="show_sql">true</property>
+        <mapping class="com.example.model.Student"/>
+    </session-factory>
+</hibernate-configuration>
+
+Create a persistence.xml file in src/main/resources/META-INF for JPA configuration.
+
+xml
+Copy code
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.2">
+    <persistence-unit name="student_admission_pu">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>com.example.model.Student</class>
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/student_admission_db"/>
+            <property name="javax.persistence.jdbc.user" value="your_username"/>
+            <property name="javax.persistence.jdbc.password" value="your_password"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="true"/>
+        </properties>
+    </persistence-unit>
+</persistence>
+
+Create Entity Classes: Define the Student entity.
+
+java
+Copy code
+package com.example.model;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "Student")
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "date_of_birth")
+    private Date dateOfBirth;
+
+    @Column(name = "admission_status")
+    private String admissionStatus;
+
+    // Getters and Setters
+}
+*******************************************************************
+Step 2: Retrieve Student Information Using Hibernate
+Create DAO Class: Define a DAO class to handle database operations.
+java
+Copy code
+package com.example.dao;
+
+import com.example.model.Student;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
+
+public class StudentDAO {
+    private SessionFactory factory;
+
+    public StudentDAO() {
+        factory = new Configuration().configure("hibernate.cfg.xml").addAnnotatedClass(Student.class).buildSessionFactory();
+    }
+
+    public Student getStudent(int id) {
+        Session session = factory.getCurrentSession();
+        try {
+            session.beginTransaction();
+            Student student = session.get(Student.class, id);
+            session.getTransaction().commit();
+            return student;
+        } finally {
+            session.close();
+        }
+    }
+}
+Retrieve and Print Student Information:
+
+java
+Copy code
+
+package com.example;
+
+import com.example.dao.StudentDAO;
+import com.example.model.Student;
+
+public class Main {
+    public static void main(String[] args) {
+        StudentDAO studentDAO = new StudentDAO();
+        Student student = studentDAO.getStudent(1);
+        if (student != null) {
+            System.out.println("Student Name: " + student.getName());
+            System.out.println("Student Email: " + student.getEmail());
+        } else {
+            System.out.println("Student not found.");
+        }
+    }
+}
+*********************************************************************
+Step 3: Create CRUD Operations Using Spring MVC and Hibernate
+Controller Class: Create a Spring MVC controller for CRUD operations.
+java
+Copy code
+package com.example.controller;
+
+import com.example.dao.StudentDAO;
+import com.example.model.Student;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Controller
+@RequestMapping("/students")
+public class StudentController {
+    @Autowired
+    private StudentDAO studentDAO;
+
+    @GetMapping("/list")
+    public String listStudents(Model model) {
+        List<Student> students = studentDAO.getAllStudents();
+        model.addAttribute("students", students);
+        return "list-students";
+    }
+
+    @GetMapping("/showFormForAdd")
+    public String showFormForAdd(Model model) {
+        Student student = new Student();
+        model.addAttribute("student", student);
+        return "student-form";
+    }
+
+    @PostMapping("/saveStudent")
+    public String saveStudent(@ModelAttribute("student") Student student) {
+        studentDAO.saveStudent(student);
+        return "redirect:/students/list";
+    }
+
+    @GetMapping("/showFormForUpdate")
+    public String showFormForUpdate(@RequestParam("studentId") int id, Model model) {
+        Student student = studentDAO.getStudent(id);
+        model.addAttribute("student", student);
+        return "student-form";
+    }
+
+    @GetMapping("/delete")
+    public String deleteStudent(@RequestParam("studentId") int id) {
+        studentDAO.deleteStudent(id);
+        return "redirect:/students/list";
+    }
+}
+DAO Class for CRUD Operations:
+java
+Copy code
+package com.example.dao;
+
+import com.example.model.Student;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
+import org.springframework.stereotype.Repository;
+
+import javax.transaction.Transactional;
+import java.util.List;
+
+@Repository
+public class StudentDAO {
+    private SessionFactory factory;
+
+    public StudentDAO() {
+        factory = new Configuration().configure("hibernate.cfg.xml").addAnnotatedClass(Student.class).buildSessionFactory();
+    }
+
+    @Transactional
+    public List<Student> getAllStudents() {
+        Session session = factory.getCurrentSession();
+        session.beginTransaction();
+        List<Student> students = session.createQuery("from Student", Student.class).getResultList();
+        session.getTransaction().commit();
+        return students;
+    }
+
+    @Transactional
+    public void saveStudent(Student student) {
+        Session session = factory.getCurrentSession();
+        session.beginTransaction();
+        session.saveOrUpdate(student);
+        session.getTransaction().commit();
+    }
+
+    @Transactional
+    public Student getStudent(int id) {
+        Session session = factory.getCurrentSession();
+        session.beginTransaction();
+        Student student = session.get(Student.class, id);
+        session.getTransaction().commit();
+        return student;
+    }
+
+    @Transactional
+    public void deleteStudent(int id) {
+        Session session = factory.getCurrentSession();
+        session.beginTransaction();
+        Student student = session.get(Student.class, id);
+        if (student != null) {
+            session.delete(student);
+        }
+        session.getTransaction().commit();
+    }
+}
+********************************************************
+Step 4: Apply Batch Update for Student’s Admission Approval
+DAO Method for Batch Update:
+java
+Copy code
+@Transactional
+public void approveAdmissions(List<Integer> studentIds) {
+    Session session = factory.getCurrentSession();

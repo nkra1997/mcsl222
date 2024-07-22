@@ -1,0 +1,323 @@
+SESSION 2: JSP 
+1. Write JSP Programme to print current date and time along with timestamp, 
+implement auto-refresh of a page. 
+2. Create a JSP page and implement a Scripting Tag, Expression tag and 
+Declaration tag. 
+3. Import JSTL library in JSP Page and use its following tags: 
+a. out 
+b. if 
+c. forEach 
+d. choice, when and otherwise 
+e. url and redirect 
+4. Create a JSP Page for database connectivity using JDBC and show the 
+students details from the database created during exercise no 5 in session 1. 
+5. Write a JSP application using following Action Elements 
+a. jsp:forward 
+b. jsp:include 
+c. set & getProperty 
+d. jsp:useBean 
+6. Write a JSP program using the following implicit objects with an example: 
+a. Out 
+b. request 
+c. response 
+d. Session 
+e. pageContext 
+f. exception 
+7. Create a JSP Project implementing all the above (Session 1 and Session 2) 
+concepts. Login Form, CRUD operation of Student details, Session 
+Management with exception handling using Servlet and JSP. Make 
+necessary assumptions required. 
+
+*************************************************************************************
+
+1. JSP Program to Print Current Date and Time with Auto-refresh
+index.jsp:
+jsp file
+
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="refresh" content="5">
+    <title>Current Date and Time</title>
+</head>
+<body>
+    <h1>Current Date and Time</h1>
+    <%
+        java.util.Date date = new java.util.Date();
+        out.println("<p>" + date.toString() + "</p>");
+    %>
+</body>
+</html>
+**************************************************************************************
+2. JSP Page with Scripting Tag, Expression Tag, and Declaration Tag
+scripting.jsp:
+jsp file
+
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scripting, Expression, and Declaration Tags</title>
+</head>
+<body>
+    <h1>JSP Tags Example</h1>
+    <%
+        // Scripting Tag
+        String message = "Hello, this is a scripting tag!";
+    %>
+    <p><%= message %></p> <!-- Expression Tag -->
+    <%
+        // Declaration Tag
+        int sum(int a, int b) {
+            return a + b;
+        }
+    %>
+    <p>Sum of 5 and 10 is: <%= sum(5, 10) %></p>
+</body>
+</html>
+****************************************************************************************
+3. JSP Page Using JSTL Library
+jstl.jsp:
+jsp file
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSTL Example</title>
+</head>
+<body>
+    <h1>JSTL Tags Example</h1>
+    
+    <!-- a. out -->
+    <c:out value="${'Hello, JSTL!'}" />
+    
+    <!-- b. if -->
+    <c:if test="${5 > 3}">
+        <p>5 is greater than 3</p>
+    </c:if>
+    
+    <!-- c. forEach -->
+    <c:forEach var="i" begin="1" end="5">
+        <p>Number: ${i}</p>
+    </c:forEach>
+    
+    <!-- d. choose, when, otherwise -->
+    <c:choose>
+        <c:when test="${5 > 3}">
+            <p>5 is greater than 3</p>
+        </c:when>
+        <c:otherwise>
+            <p>5 is not greater than 3</p>
+        </c:otherwise>
+    </c:choose>
+    
+    <!-- e. url and redirect -->
+    <c:url var="myUrl" value="https://www.example.com" />
+    <p>URL: <c:out value="${myUrl}" /></p>
+    <!-- Uncomment the following line to enable redirect -->
+    <!-- <c:redirect url="${myUrl}" /> -->
+</body>
+</html>
+*******************************************************************************************
+
+4. JSP Page for Database Connectivity Using JDBC
+database.jsp:
+jsp file
+
+<%@ page import="java.sql.*, java.util.*" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Connectivity</title>
+</head>
+<body>
+    <h1>Student Details</h1>
+    <%
+        String url = "jdbc:mysql://localhost:3306/school";
+        String user = "root";
+        String password = "password";
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection(url, user, password);
+            stmt = conn.createStatement();
+            String query = "SELECT * FROM students";
+            rs = stmt.executeQuery(query);
+
+            out.println("<table border='1'><tr><th>ID</th><th>Name</th><th>Age</th></tr>");
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+                out.println("<tr><td>" + id + "</td><td>" + name + "</td><td>" + age + "</td></tr>");
+            }
+            out.println("</table>");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (stmt != null) stmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    %>
+</body>
+</html>
+*******************************************************************************************
+
+5. JSP Application Using Action Elements
+forward.jsp:
+jsp tag
+<jsp:forward page="destination.jsp" />
+
+include.jsp:
+<jsp:include page="included.jsp" />
+
+setProperty.jsp:
+<jsp:useBean id="student" class="com.example.Student" />
+<jsp:setProperty name="student" property="name" value="John Doe" />
+<jsp:setProperty name="student" property="age" value="20" />
+<jsp:getProperty name="student" property="name" />
+<jsp:getProperty name="student" property="age" />
+***************************************************************************************
+
+6. JSP Program Using Implicit Objects
+implicit.jsp:
+jsp file
+
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Implicit Objects Example</title>
+</head>
+<body>
+    <h1>Implicit Objects Example</h1>
+    <!-- a. out -->
+    <p><%= "Hello, World!" %></p>
+    
+    <!-- b. request -->
+    <p>Request URI: <%= request.getRequestURI() %></p>
+    
+    <!-- c. response -->
+    <%
+        response.setContentType("text/html");
+    %>
+    
+    <!-- d. session -->
+    <%
+        session.setAttribute("username", "JohnDoe");
+    %>
+    <p>Username from session: <%= session.getAttribute("username") %></p>
+    
+    <!-- e. pageContext -->
+    <p>Page ID: <%= pageContext.getPage().hashCode() %></p>
+    
+    <!-- f. exception -->
+    <%
+        try {
+            int result = 10 / 0;
+        } catch (Exception e) {
+            pageContext.setAttribute("exception", e);
+        }
+    %>
+    <p>Exception: <%= pageContext.getAttribute("exception") %></p>
+</body>
+</html>
+*****************************************************************************************
+
+7. Complete JSP Project
+For the complete project, including a login form, CRUD operations, session management, and exception handling using Servlet and JSP, here's an outline of what you might do:
+
+Login Form (login.jsp):
+jsp file
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <form action="loginServlet" method="post">
+        Username: <input type="text" name="username" /><br />
+        Password: <input type="password" name="password" /><br />
+        <input type="submit" value="Login" />
+    </form>
+</body>
+</html>
+
+Login Servlet (LoginServlet.java):
+java file
+
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+@WebServlet("/loginServlet")
+public class LoginServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+
+        // Simple authentication logic (for demonstration purposes only)
+        if ("admin".equals(username) && "password".equals(password)) {
+            HttpSession session = request.getSession();
+            session.setAttribute("username", username);
+            response.sendRedirect("dashboard.jsp");
+        } else {
+            response.sendRedirect("login.jsp?error=Invalid+credentials");
+        }
+    }
+}
+
+
+Dashboard (dashboard.jsp):
+jsp file
+
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, <%= session.getAttribute("username") %>!</h1>
+    <a href="logoutServlet">Logout</a>
+</body>
+</html>
+
+Logout Servlet (LogoutServlet.java):
+java file
+
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+@WebServlet("/logoutServlet")
+public class LogoutServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        session.invalidate();
+        response.sendRedirect("login.jsp");
+
+
+
+
+

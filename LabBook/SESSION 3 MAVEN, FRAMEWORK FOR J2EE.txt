@@ -1,0 +1,203 @@
+SESSION 3: MAVEN, FRAMEWORK FOR J2EE 
+1. Create a Maven-based project using Spring Initializr. 
+2. Create a Maven-based J2EE application for Spring MVC. 
+3. Create a Maven-based J2EE application for Hibernate and JPA. Use the 
+same database created in Exercise no. 5 of Session 1. 
+4. Define a new implementation of Teacher Interface for his/her favourite 
+Course in Spring using Inversion of Control and retrieving the information 
+from the new teacher implementation. 
+
+****************************************************
+
+1. Create a Maven-based project using Spring Initializr
+Step-by-Step Guide:
+
+Open Spring Initializr:
+Go to Spring Initializr.
+
+Project Settings:
+
+Project: Maven Project
+Language: Java
+Spring Boot: Choose the latest stable version (e.g., 2.7.0)
+Project Metadata:
+Group: com.example
+ Artifact: demo
+ Name: demo
+ Description: Demo project for Spring Boot
+ Package name: com.example.demo
+ Packaging: Jar
+ Java: 11 (or any other version you prefer)
+Dependencies:
+Add the following dependencies:
+ Spring Web
+ Spring Data JPA
+ H2 Database (for simplicity, you can replace it with the database you prefer)
+Generate Project:
+Click on "Generate" to download the project zip file.
+
+Import Project:
+Extract the zip file and import the project into your IDE (e.g., IntelliJ IDEA, Eclipse).
+************************************************************************************************
+2. Create a Maven-based J2EE application for Spring MVC
+Step-by-Step Guide:
+
+Add Dependencies:
+Open the pom.xml file and ensure you have the following dependencies for Spring MVC:
+
+xml
+Copy code
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- Other dependencies -->
+</dependencies>
+Create a Controller:
+In the src/main/java/com/example/demo package, create a new package called controller and add a new Java class:
+
+java
+Copy code
+package com.example.demo.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class HelloController {
+
+    @GetMapping("/hello")
+    @ResponseBody
+    public String sayHello() {
+        return "Hello, World!";
+    }
+}
+Run the Application:
+Run the application by executing the DemoApplication class. Access http://localhost:8080/hello in your browser to see the output.
+***************************************************************************************************************************
+3. Create a Maven-based J2EE application for Hibernate and JPA
+Step-by-Step Guide:
+
+Add Dependencies:
+Open the pom.xml file and ensure you have the following dependencies for Hibernate and JPA:
+
+xml
+Copy code
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+    <!-- Other dependencies -->
+</dependencies>
+Create an Entity Class:
+Create a new package called entity and add a new Java class:
+
+java
+Copy code
+package com.example.demo.entity;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
+public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private String email;
+
+    // Getters and Setters
+}
+Create a Repository Interface:
+Create a new package called repository and add a new Java interface:
+
+java
+Copy code
+package com.example.demo.repository;
+
+import com.example.demo.entity.Student;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface StudentRepository extends JpaRepository<Student, Long> {
+}
+Database Configuration:
+Open the src/main/resources/application.properties file and add the following configuration:
+
+properties
+Copy code
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+Run the Application:
+Run the application by executing the DemoApplication class.
+************************************************************************************************************
+4. Define a new implementation of Teacher Interface for a Favourite Course in Spring using IoC
+Step-by-Step Guide:
+
+Create the Teacher Interface:
+
+java
+Copy code
+package com.example.demo.service;
+
+public interface Teacher {
+    String getFavoriteCourse();
+}
+Create the Implementation Class:
+
+java
+Copy code
+package com.example.demo.service.impl;
+
+import com.example.demo.service.Teacher;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MathTeacher implements Teacher {
+
+    @Override
+    public String getFavoriteCourse() {
+        return "Mathematics";
+    }
+}
+Use the Implementation:
+Create a controller to retrieve the information from the new teacher implementation:
+
+java
+Copy code
+package com.example.demo.controller;
+
+import com.example.demo.service.Teacher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class TeacherController {
+
+    @Autowired
+    private Teacher mathTeacher;
+
+    @GetMapping("/favorite-course")
+    @ResponseBody
+    public String getFavoriteCourse() {
+        return mathTeacher.getFavoriteCourse();
+    }
+}
+Run the Application:
+Run the application by executing the DemoApplication class. Access http://localhost:8080/favorite-course in your browser to see the output.
