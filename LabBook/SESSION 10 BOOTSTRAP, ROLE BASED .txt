@@ -1,0 +1,299 @@
+SESSION 10: BOOTSTRAP, ROLE BASED 
+AUTHENTICATION AND CSRF 
+1. Add Bootstrap styling in the Login and registration page in the above 
+exercises in session 9. 
+2. Create a Role Table in the database and configure it with Spring Boot, 
+Security and Hibernate. 
+3. Write code for role-based authentication using Spring Security. 
+4. Display current logged in User details on the dashboard along with client IP, 
+data time and user’s current role. 
+5. Add CSRF functionality in the authentication. 
+6. Restrict role-based access to views in Spring Boot Security.
+****************************************************
+1. Add Bootstrap Styling to Login and Registration Page
+To add Bootstrap styling to your Login and Registration pages, include the Bootstrap CSS and JS files in your project. You can do this by adding the Bootstrap CDN links to your header section.
+
+Add Bootstrap CDN in your HTML header:
+
+html
+Copy code
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+Login Page Example:
+
+html
+Copy code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <h2 class="text-center">Login</h2>
+        <form method="post" action="/login">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+Registration Page Example:
+
+html
+Copy code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <h2 class="text-center">Register</h2>
+        <form method="post" action="/register">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+*************************************************************
+2. Create a Role Table in the Database
+Create Role Entity:
+
+java
+Copy code
+@Entity
+@Table(name = "roles")
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    // getters and setters
+}
+Create User Entity with Role Mapping:
+
+java
+Copy code
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "users_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
+    // getters and setters
+}
+Role Repository:
+
+java
+Copy code
+public interface RoleRepository extends JpaRepository<Role, Long> {
+    Role findByName(String name);
+}
+********************************************
+3. Role-based Authentication using Spring Security
+Security Configuration:
+
+java
+Copy code
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder);
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .csrf().disable()
+            .authorizeRequests()
+                .antMatchers("/register", "/login").permitAll()
+                .antMatchers("/admin/**").hasRole("ADMIN")
+                .antMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                .anyRequest().authenticated()
+                .and()
+            .formLogin()
+                .loginPage("/login")
+                .permitAll()
+                .and()
+            .logout()
+                .permitAll();
+    }
+}
+UserDetailsService Implementation:
+
+java
+Copy code
+@Service
+public class UserDetailsServiceImpl implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
+                mapRolesToAuthorities(user.getRoles()));
+    }
+
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Set<Role> roles) {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toList());
+    }
+}
+************************************************
+4. Display Logged-in User Details on Dashboard
+Dashboard Controller:
+
+java
+Copy code
+@Controller
+public class DashboardController {
+
+    @GetMapping("/dashboard")
+    public String dashboard(Model model, Principal principal, HttpServletRequest request) {
+        User user = (User) ((Authentication) principal).getPrincipal();
+        model.addAttribute("username", user.getUsername());
+        model.addAttribute("roles", user.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.joining(", ")));
+        model.addAttribute("clientIp", request.getRemoteAddr());
+        model.addAttribute("dateTime", LocalDateTime.now());
+        return "dashboard";
+    }
+}
+Dashboard Page Example:
+
+html
+Copy code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, ${username}!</h1>
+    <p>Roles: ${roles}</p>
+    <p>Client IP: ${clientIp}</p>
+    <p>Date and Time: ${dateTime}</p>
+  </div>
+</body>
+</html>
+********************************************************
+5. Add CSRF Functionality in the Authentication
+Enable CSRF in Security Configuration:
+
+java
+Copy code
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+        .and()
+        .authorizeRequests()
+            .antMatchers("/register", "/login").permitAll()
+            .antMatchers("/admin/**").hasRole("ADMIN")
+            .antMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+            .anyRequest().authenticated()
+            .and()
+        .formLogin()
+            .loginPage("/login")
+            .permitAll()
+            .and()
+        .logout()
+            .permitAll();
+}
+CSRF Token in Forms:
+
+html
+Copy code
+<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+************************************************
+6. Restrict Role-based Access to Views in Spring Boot Security
+This is handled within the configure method in SecurityConfig by specifying role-based access for different URL patterns:
+
+java
+Copy code
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+        .and()
+        .authorizeRequests()
+            .antMatchers("/register", "/login").permitAll()
+            .antMatchers("/admin/**").hasRole("ADMIN")
+            .antMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+            .anyRequest().authenticated()
+            .and()
+        .formLogin()
+            .loginPage("/login")
+            .permitAll()
+            .and()
+        .logout()
+            .permitAll();
+}

@@ -1,0 +1,235 @@
+SESSION 9: SPRING SECURITY 
+1. Create a User table into the database and bind the user entity with Spring 
+Security for Login. 
+2. Create a Custom Login Page in HTML and authenticate using Spring 
+Security in Spring Boot. 
+3. Implement logout functionality in Spring Security. 
+4. Create a User registration form and validate the form. Once information is 
+validated and saved, write functionality to auto-login using Spring Security.
+****************************************************
+Session 9: Spring Security
+Step 1: Create a User Table and Bind User Entity with Spring Security
+Create User Table
+Define a User entity and map it to a table in your database.
+java
+Copy code
+@Entity
+@Table(name = "users")
+public class User {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private boolean enabled;
+
+    // Getters and Setters
+}
+Create a User Repository
+java
+Copy code
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+}
+Bind User Entity with Spring Security
+Implement UserDetails and UserDetailsService to integrate with Spring Security.
+java
+Copy code
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), new ArrayList<>());
+    }
+}
+Configure Spring Security
+java
+Copy code
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+            .antMatchers("/login", "/register").permitAll()
+            .anyRequest().authenticated()
+            .and()
+            .formLogin()
+            .loginPage("/login")
+            .permitAll()
+            .and()
+            .logout()
+            .permitAll();
+    }
+}
+*****************************************
+Step 2: Create a Custom Login Page
+Create login.html
+html
+Copy code
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form th:action="@{/login}" method="post">
+        <div>
+            <label>Username:</label>
+            <input type="text" name="username"/>
+        </div>
+        <div>
+            <label>Password:</label>
+            <input type="password" name="password"/>
+        </div>
+        <div>
+            <button type="submit">Login</button>
+        </div>
+    </form>
+</body>
+</html>
+Controller to Handle Login
+java
+Copy code
+@Controller
+public class LoginController {
+    
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+}
+****************************************
+Step 3: Implement Logout Functionality
+Spring Security automatically provides logout functionality. The logout URL is /logout by default. It can be customized in the SecurityConfig if needed.
+
+java
+Copy code
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .authorizeRequests()
+        .antMatchers("/login", "/register").permitAll()
+        .anyRequest().authenticated()
+        .and()
+        .formLogin()
+        .loginPage("/login")
+        .permitAll()
+        .and()
+        .logout()
+        .logoutUrl("/logout")
+        .logoutSuccessUrl("/login?logout")
+        .permitAll();
+}
+*******************************************
+Step 4: Create a User Registration Form and Validate
+Create register.html
+html
+Copy code
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register</title>
+</head>
+<body>
+    <h2>Register</h2>
+    <form th:action="@{/register}" method="post">
+        <div>
+            <label>Username:</label>
+            <input type="text" name="username"/>
+        </div>
+        <div>
+            <label>Password:</label>
+            <input type="password" name="password"/>
+        </div>
+        <div>
+            <label>Confirm Password:</label>
+            <input type="password" name="confirmPassword"/>
+        </div>
+        <div>
+            <button type="submit">Register</button>
+        </div>
+    </form>
+</body>
+</html>
+Controller for Registration
+java
+Copy code
+@Controller
+public class RegistrationController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    @GetMapping("/register")
+    public String register(Model model) {
+        model.addAttribute("user", new User());
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerUser(@ModelAttribute User user, BindingResult result) {
+        if (result.hasErrors()) {
+            return "register";
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setEnabled(true);
+        userRepository.save(user);
+        return "redirect:/login";
+    }
+}
+Auto-Login After Registration
+java
+Copy code
+@PostMapping("/register")
+public String registerUser(@ModelAttribute User user, BindingResult result, HttpServletRequest request) {
+    if (result.hasErrors()) {
+        return "register";
+    }
+    user.setPassword(passwordEncoder.encode(user.getPassword()));
+    user.setEnabled(true);
+    userRepository.save(user);
+
+    // Auto-login
+    try {
+        request.login(user.getUsername(), user.getPassword());
+    } catch (ServletException e) {
+        e.printStackTrace();
+    }
+    return "redirect:/";
+}
